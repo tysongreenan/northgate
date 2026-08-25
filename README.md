@@ -22,27 +22,28 @@ Vanilla HTML/CSS/JS. No install step, no bundler.
 3. You should see a **Northgate banner** at the top of the page.
 4. In the ChatGPT composer type something like:
    `Email jane@clinic.ca or call 416-555-0100`
-5. Matches get a wavy underline. The banner reads **PII in composer — will redact on send**.
-6. Press **Enter** or **Send**. The composer is rewritten in place to `[EMAIL]` / `[PHONE]`, then the send proceeds. Banner: **Sent after redaction**.
-7. Open the popup or **Open log**. Download **JSON** or **CSV**.
-8. Optional: turn on **Pretend Canada-only (demo)** and send PII again. A modal blocks the send: **Stayed in Canada (blocked)**.
+5. Matches get a wavy underline (contenteditable). The banner reads **PII in composer — will redact on send**. Textarea composers get the banner only.
+6. Press **Enter** or **Send**. Northgate **stops that send**, rewrites the composer to `[EMAIL]` / `[PHONE]`, and asks you to press Send again. It does not auto-click Send.
+7. Press **Send** a second time. Only then does the redacted text go out. Banner: **Sent after redaction**. If the rewrite did not stick, the original is never sent.
+8. Open the popup or **Open log**. Download **JSON** or **CSV**.
+9. Optional: turn on **Pretend Canada-only (demo)** and send PII again. A modal blocks the send: **Stayed in Canada (blocked)**.
 
 Honest labels: if text is sent to ChatGPT it still goes to OpenAI. “Stayed in Canada” only means the demo toggle blocked the send. There is no Canadian model route in this prototype.
 
 ## Hosts
 
-Hosts live in `lib/hosts.js`. V1 **enables only** `https://chatgpt.com/*`.
+Hosts live in `lib/hosts.js`. V1 **enables only** ChatGPT:
 
 | Host | Status |
 | --- | --- |
-| ChatGPT (`chatgpt.com`) | Implemented |
+| ChatGPT (`chatgpt.com`, `chat.openai.com`) | Implemented |
 | Claude (`claude.ai`) | Empty slot |
 | Gemini (`gemini.google.com`) | Empty slot |
 | Grok (`grok.com`, `grok.x.ai`, `x.com/i/grok*`) | Empty slot |
 
 Adding Claude later is: flip `enabled` in the host list, add one match to `manifest.json`, fill `adapters/claude.js`. Do not rewrite the core. Core has vault + redaction + banner/log and no OpenAI types.
 
-The ChatGPT adapter binds `#prompt-textarea`, `textarea` / `contenteditable`, Send (`button[data-testid="send-button"]` / `aria-label="Send prompt"`), and Enter. It scans on type, paste, and send. If OpenAI changes the composer, edit only `adapters/chatgpt.js`.
+The ChatGPT adapter binds `#prompt-textarea`, `textarea` / `contenteditable`, Send (`button[data-testid="send-button"]` / `aria-label="Send prompt"`), and Enter. It scans on type, paste, and send. First Send redacts and asks for a resubmit; it never auto-clicks Send. If OpenAI changes the composer, edit only `adapters/chatgpt.js`.
 
 ChatGPT’s composer is reliable for this V1. Other sites are not wired.
 

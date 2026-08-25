@@ -7,10 +7,13 @@
  *   button[aria-label="Send prompt"]
  *   textarea / [contenteditable="true"] inside the composer form
  *
- * Nightfall-style: intercept before submit.
- * PRISMX-style: rewrite inline, then the send uses redacted text.
- * Control Zero-style: top banner + underlines on matches.
- * Canada-only demo: modal, do not send.
+ * Nightfall-safer V1:
+ *   1. Intercept Send / Enter before submit.
+ *   2. Redact in place.
+ *   3. Never auto-click Send (React/ProseMirror write may not stick).
+ *   4. Ask the user to press Send again on the redacted text.
+ *   5. Allow the next send only if the composer has no structured PII.
+ * If the write fails, block and never send the original.
  */
 import { scanText, findMatches } from "../lib/scan.js";
 import { addActivity, getState } from "../lib/storage.js";
@@ -18,6 +21,7 @@ import {
   ensureOverlay,
   setBanner,
   showBlockModal,
+  showNotice,
   underlineMatches,
   bindMatchFinder,
   clearUnderlines,
@@ -32,8 +36,10 @@ const COMPOSER_SELECTORS = [
 const SEND_TESTID = "send-button";
 const SEND_LABELS = new Set(["send prompt", "send"]);
 
-let passThrough = false;
 let paint = 0;
+let pendingResubmit = false;
+let lastRedacted = "";
+let holdUntil = 0;
 let cache = {
   pretendCanadaOnly: false,
   vaultName: "",
@@ -102,14 +108,6 @@ function isSendButton(node) {
   return testid === SEND_TESTID || SEND_LABELS.has(label);
 }
 
-function findSendButton() {
-  return (
-    document.querySelector(`button[data-testid="${SEND_TESTID}"]`) ||
-    document.querySelector('button[aria-label="Send prompt"]') ||
-    document.querySelector('button[aria-label="Send"]')
-  );
-}
-
 function readComposer(el) {
   if (!el) return "";
   if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
@@ -136,6 +134,27 @@ function writeComposer(el, text) {
   document.execCommand("insertText", false, text);
 }
 
+function normalize(text) {
+  return String(text || "").replace(/\s+/g, " ").trim();
+}
+
+function composerIsSafe(result, expectedRedacted) {
+  if (!result.found) return true;
+  return Boolean(
+    expectedRedacted && normalize(result.original) === normalize(expectedRedacted)
+  );
+}
+
+function stopSend(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+function resetPending() {
+  pendingResubmit = false;
+  lastRedacted = "";
+}
+
 function liveScan() {
   const composer = getComposer();
   if (!composer) {
@@ -151,6 +170,7 @@ function liveScan() {
   underlineMatches(composer);
 
   if (result.found) {
+    resetPending();
     setBanner({
       tone: cache.pretendCanadaOnly ? "block" : "warn",
       status: cache.pretendCanadaOnly
@@ -158,12 +178,22 @@ function liveScan() {
         : "PII in composer — will redact on send",
       detail: cache.vaultName,
     });
-  } else {
+    return;
+  }
+
+  if (pendingResubmit) {
     setBanner({
-      status: "No PII detected",
+      tone: "warn",
+      status: "Redacted — press Send again",
       detail: cache.vaultName,
     });
+    return;
   }
+
+  setBanner({
+    status: "No PII detected",
+    detail: cache.vaultName,
+  });
 }
 
 function onEdit(event) {
@@ -179,43 +209,47 @@ function onPaste(event) {
 }
 
 function onClick(event) {
-  if (passThrough) return;
   if (!isSendButton(event.target)) return;
-  handleSend(event, "click");
+  handleSend(event);
 }
 
 function onKeydown(event) {
-  if (passThrough) return;
   if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
   if (!isInsideComposer(event.target)) return;
-  handleSend(event, "enter");
+  handleSend(event);
 }
 
 function onSubmit(event) {
-  if (passThrough) return;
   const composer = getComposer();
   if (!composer) return;
   if (event.target instanceof HTMLFormElement && event.target.contains(composer)) {
-    handleSend(event, "submit");
+    handleSend(event);
   }
 }
 
-function handleSend(event, via) {
-  const composer = getComposer();
-  const text = readComposer(composer).trim();
-  if (!composer || !text) return;
-
-  const result = scanText(readComposer(composer));
-
-  if (!result.found) {
-    setBanner({ status: "No PII detected", detail: cache.vaultName });
-    clearUnderlines();
-    logDecision("No PII detected", result);
+function handleSend(event) {
+  if (Date.now() < holdUntil) {
+    stopSend(event);
     return;
   }
 
-  event.preventDefault();
-  event.stopImmediatePropagation();
+  const composer = getComposer();
+  const raw = readComposer(composer);
+  if (!composer || !raw.trim()) return;
+
+  const result = scanText(raw);
+
+  if (composerIsSafe(result, lastRedacted)) {
+    const decision = pendingResubmit ? "Sent after redaction" : "No PII detected";
+    setBanner({ status: decision, detail: cache.vaultName });
+    clearUnderlines();
+    logDecision(decision, result);
+    resetPending();
+    return;
+  }
+
+  stopSend(event);
+  holdUntil = Date.now() + 500;
 
   if (cache.pretendCanadaOnly) {
     setBanner({
@@ -229,41 +263,49 @@ function handleSend(event, via) {
         "Structured PII was found and Pretend Canada-only is on. The prompt was not sent. This prototype does not route to a Canadian model.",
     });
     logDecision("Stayed in Canada (blocked)", result);
+    resetPending();
     return;
   }
 
   writeComposer(composer, result.redacted);
+  const verified = scanText(readComposer(composer));
+  if (!composerIsSafe(verified, result.redacted)) {
+    setBanner({
+      tone: "block",
+      status: "Redaction failed — send blocked",
+      detail: cache.vaultName,
+    });
+    showNotice({
+      title: "Send blocked",
+      message:
+        "Northgate could not rewrite the ChatGPT composer. The original prompt was not sent. Remove the highlighted PII yourself, then press Send.",
+    });
+    logDecision("Redaction failed (blocked)", result);
+    resetPending();
+    return;
+  }
+
+  lastRedacted = result.redacted;
+  pendingResubmit = true;
   clearUnderlines();
   setBanner({
     tone: "warn",
-    status: "Sent after redaction",
+    status: "Redacted — press Send again",
     detail: cache.vaultName,
   });
-  logDecision("Sent after redaction", result);
-  replaySend(via);
-}
-
-function replaySend(via) {
-  passThrough = true;
-  const fire = () => {
-    const button = findSendButton();
-    if (via === "submit") {
-      getComposer()?.closest("form")?.requestSubmit?.();
-    } else if (button && !button.disabled) {
-      button.click();
-    }
-    window.setTimeout(() => {
-      passThrough = false;
-    }, 80);
-  };
-  requestAnimationFrame(() => requestAnimationFrame(fire));
+  showNotice({
+    title: "Redacted — press Send again",
+    message:
+      "Structured PII was replaced in the composer. Review the tokens, then press Send or Enter once more. Northgate will not submit for you.",
+  });
+  logDecision("Redacted — waiting for resubmit", result);
 }
 
 function logDecision(decision, result) {
   addActivity({
     vaultId: cache.vaultId,
     vaultName: cache.vaultName,
-    host: "chatgpt.com",
+    host: location.hostname.replace(/^www\./, ""),
     decision,
     redactions: result.counts,
   }).catch(() => {});
