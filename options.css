@@ -1,0 +1,104 @@
+:root {
+  --ink: #14241c;
+  --muted: #5c6a62;
+  --paper: #f4efe4;
+  --card: #fffdf8;
+  --line: #d8d0c2;
+  --forest: #1b3d2f;
+  --maple: #c7462e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+
+.mast {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--forest);
+  color: #f4efe4;
+}
+
+.mast h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.tag,
+.hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.mast .tag {
+  color: #d5e0d8;
+}
+
+.mark {
+  border-radius: 7px;
+}
+
+main {
+  padding: 20px 24px 40px;
+  max-width: 1100px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 7px 10px;
+}
+
+.danger {
+  color: var(--maple);
+}
+
+table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  background: var(--card);
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  vertical-align: top;
+}
+
+th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}

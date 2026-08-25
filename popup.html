@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Northgate</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <img class="mark" src="icons/icon32.png" alt="" width="28" height="28" />
+      <div>
+        <h1>Northgate</h1>
+        <p class="tag">Canadian prompt firewall · local prototype</p>
+      </div>
+    </header>
+
+    <section id="signed-out" class="panel hidden">
+      <label for="name">Dev sign-in</label>
+      <input id="name" type="text" maxlength="80" placeholder="Your name" autocomplete="off" />
+      <button id="sign-in" class="primary" type="button">Sign in</button>
+      <p id="sign-in-error" class="error" hidden></p>
+    </section>
+
+    <section id="signed-in" class="panel hidden">
+      <div class="row">
+        <p>Signed in as <strong id="who"></strong></p>
+        <button id="sign-out" class="ghost" type="button">Sign out</button>
+      </div>
+
+      <label for="vault">Client vault</label>
+      <select id="vault"></select>
+
+      <label class="toggle">
+        <input id="canada-only" type="checkbox" />
+        <span>Pretend Canada-only (demo)</span>
+      </label>
+      <p class="hint">
+        If this is on and PII is found, ChatGPT send is blocked and a modal
+        reads “Stayed in Canada (blocked)”. This prototype does not route to a
+        Canadian model. A redacted send on ChatGPT still goes to OpenAI.
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="row">
+        <h2>Activity</h2>
+        <a href="options.html" target="_blank" rel="noreferrer">Open log</a>
+      </div>
+      <ul id="activity" class="activity"></ul>
+      <p id="activity-empty" class="hint">
+        No events yet. Send a prompt on chatgpt.com to log a decision.
+      </p>
+    </section>
+
+    <footer class="note">
+      V1 watches chatgpt.com only. Claude / Gemini / Grok are empty host slots.
+      No replacement chat UI. Real Canada routing is not in this prototype.
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

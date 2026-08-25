@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Northgate activity</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <img class="mark" src="icons/icon32.png" alt="" width="32" height="32" />
+      <div>
+        <h1>Northgate activity</h1>
+        <p class="tag">
+          Local PIPEDA / Law 25 report sketch. Stored in chrome.storage.local only.
+        </p>
+      </div>
+    </header>
+
+    <main>
+      <section class="toolbar">
+        <p id="status">Loading…</p>
+        <div class="actions">
+          <button id="sample" type="button">Insert sample activity</button>
+          <button id="json" type="button">Download JSON</button>
+          <button id="csv" type="button">Download CSV</button>
+          <button id="clear" class="danger" type="button">Clear log</button>
+        </div>
+      </section>
+
+      <p class="hint">
+        Real Canada routing is not in this prototype. Rows are written when a
+        ChatGPT send is scanned. Use sample activity to preview the monthly
+        PIPEDA / Law 25 download.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Vault</th>
+            <th>Host</th>
+            <th>Decision</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>SIN</th>
+            <th>Card</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" class="hint" hidden>No activity yet.</p>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

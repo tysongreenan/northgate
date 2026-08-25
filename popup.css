@@ -1,0 +1,155 @@
+:root {
+  --ink: #14241c;
+  --muted: #5c6a62;
+  --paper: #f4efe4;
+  --card: #fffdf8;
+  --line: #d8d0c2;
+  --forest: #1b3d2f;
+  --maple: #c7462e;
+  --focus: #2f6f4f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 360px;
+  color: var(--ink);
+  background: var(--paper);
+  font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+
+.mast {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 14px 10px;
+  background: var(--forest);
+  color: #f4efe4;
+}
+
+.mast h1 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.tag,
+.hint,
+.note,
+.error {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mast .tag {
+  color: #d5e0d8;
+}
+
+.mark {
+  border-radius: 6px;
+}
+
+.panel {
+  padding: 12px 14px 4px;
+}
+
+.hidden {
+  display: none;
+}
+
+label {
+  display: block;
+  margin: 8px 0 4px;
+  font-weight: 600;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.primary {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 0;
+  background: var(--forest);
+  color: #f4efe4;
+}
+
+.ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 4px 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.row h2 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  font-weight: 500;
+}
+
+.activity {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.activity li {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.activity .meta {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.error {
+  color: var(--maple);
+}
+
+.note {
+  padding: 10px 14px 14px;
+}
+
+a {
+  color: var(--focus);
+}
