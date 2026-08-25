@@ -15,11 +15,13 @@ Clone: https://github.com/tysongreenan/northgate
 
 Vanilla HTML/CSS/JS. No install step, no bundler.
 
+The injected content script is a **classic** (non-module) stub so it always runs on ChatGPT. It paints the banner first, then loads `boot.js` as a module via `chrome.runtime.getURL`.
+
 ## How to test (ChatGPT only)
 
 1. Click the Northgate icon. Enter any name → **Sign in**. Pick **Sway — Acme Clinic** or **Sway — Birch Marketing**.
 2. Open https://chatgpt.com (stay on that site — Northgate does not give you a paste box).
-3. You should see a **Northgate banner** at the top of the page.
+3. You should see a green **Northgate** banner at the top immediately (even on a guest page, before anyone types). First paint says **Northgate · script loaded**, then it upgrades when the adapter starts.
 4. In the ChatGPT composer type something like:
    `Email jane@clinic.ca or call 416-555-0100`
 5. Matches get a wavy underline (contenteditable). The banner reads **PII in composer — will redact on send**. Textarea composers get the banner only.

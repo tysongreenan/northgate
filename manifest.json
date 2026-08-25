@@ -29,8 +29,20 @@
         "https://chat.openai.com/*"
       ],
       "js": ["content.js"],
-      "type": "module",
-      "run_at": "document_idle"
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "boot.js",
+        "lib/*",
+        "adapters/*"
+      ],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ]
     }
   ]
 }
