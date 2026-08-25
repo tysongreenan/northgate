@@ -1,5 +1,8 @@
 /**
- * ChatGPT host adapter. If the composer DOM changes, edit only this file.
+ * Source notes only. The live inject is the flattened classic `content.js`.
+ * Do not load this file as a content script or WAR module.
+ *
+ * ChatGPT host adapter. If the composer DOM changes, update content.js.
  *
  * Public, documented hooks (not hashed class names):
  *   #prompt-textarea

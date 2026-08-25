@@ -31,18 +31,5 @@
       "js": ["content.js"],
       "run_at": "document_start"
     }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "boot.js",
-        "lib/*",
-        "adapters/*"
-      ],
-      "matches": [
-        "https://chatgpt.com/*",
-        "https://chat.openai.com/*"
-      ]
-    }
   ]
 }

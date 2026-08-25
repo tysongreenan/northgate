@@ -15,7 +15,7 @@ Clone: https://github.com/tysongreenan/northgate
 
 Vanilla HTML/CSS/JS. No install step, no bundler.
 
-The injected content script is a **classic** (non-module) stub so it always runs on ChatGPT. It paints the banner first, then loads `boot.js` as a module via `chrome.runtime.getURL`.
+The page inject is **one classic `content.js`** (no `import`/`export`, no `type: module`, no `web_accessible_resources`). Banner paint and the ChatGPT adapter live in that file. Popup/options may use ES modules because they are extension pages, not page-injects.
 
 ## How to test (ChatGPT only)
 
@@ -43,9 +43,9 @@ Hosts live in `lib/hosts.js`. V1 **enables only** ChatGPT:
 | Gemini (`gemini.google.com`) | Empty slot |
 | Grok (`grok.com`, `grok.x.ai`, `x.com/i/grok*`) | Empty slot |
 
-Adding Claude later is: flip `enabled` in the host list, add one match to `manifest.json`, fill `adapters/claude.js`. Do not rewrite the core. Core has vault + redaction + banner/log and no OpenAI types.
+Adding Claude later is: flip `enabled` in `lib/hosts.js` and the host list inside classic `content.js`, add one match to `manifest.json`, then add the Claude bind to `content.js` (or a future classic flatten). Do not introduce WAR or module content scripts.
 
-The ChatGPT adapter binds `#prompt-textarea`, `textarea` / `contenteditable`, Send (`button[data-testid="send-button"]` / `aria-label="Send prompt"`), and Enter. It scans on type, paste, and send. First Send redacts and asks for a resubmit; it never auto-clicks Send. If OpenAI changes the composer, edit only `adapters/chatgpt.js`.
+The ChatGPT bind in `content.js` uses `#prompt-textarea`, `textarea` / `contenteditable`, Send (`button[data-testid="send-button"]` / `aria-label="Send prompt"`), and Enter. First Send redacts and asks for a resubmit; it never auto-clicks Send.
 
 ChatGPT’s composer is reliable for this V1. Other sites are not wired.
 
