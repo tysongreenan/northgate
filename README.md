@@ -25,8 +25,8 @@ The page inject is **one classic `content.js`** (no `import`/`export`, no `type:
 4. In the ChatGPT composer type something like:
    `Email jane@clinic.ca or call 416-555-0100`
 5. Matches get a wavy underline (contenteditable). The banner reads **PII in composer — will redact on send**. Textarea composers get the banner only.
-6. Press **Enter** or **Send**. Northgate **stops that send**, rewrites the composer to `[EMAIL]` / `[PHONE]`, and asks you to press Send again. It does not auto-click Send.
-7. Press **Send** a second time. Only then does the redacted text go out. Banner: **Sent after redaction**. If the rewrite did not stick, the original is never sent.
+6. Press **Enter** or **Send**. Northgate **stops that send**, rewrites the composer to `[EMAIL]` / `[PHONE]`, and shows a modal. **OK only dismisses the dialog** — it must not submit.
+7. After the modal is gone, press **Send** again. Only then does the redacted text go out. Banner: **Sent after redaction**. If the rewrite did not stick, the original is never sent.
 8. Open the popup or **Open log**. Download **JSON** or **CSV**.
 9. Optional: turn on **Pretend Canada-only (demo)** and send PII again. A modal blocks the send: **Stayed in Canada (blocked)**.
 

@@ -217,16 +217,51 @@
     if (document.documentElement) document.documentElement.appendChild(style);
   }
 
+  var modalOpen = false;
+
+  function isHardStop() {
+    return modalOpen || Date.now() < holdUntil;
+  }
+
+  function blurComposer() {
+    var composer = getComposer();
+    if (composer && composer.blur) composer.blur();
+    var active = document.activeElement;
+    if (active && active !== document.body && active.blur) {
+      try { active.blur(); } catch (err) {}
+    }
+  }
+
+  function dismissModal() {
+    var host = document.getElementById(MODAL_ID);
+    if (!host) {
+      modalOpen = false;
+      return;
+    }
+    holdUntil = Date.now() + 400;
+    var card = host.shadowRoot && host.shadowRoot.querySelector(".card");
+    if (card) card.style.visibility = "hidden";
+    requestAnimationFrame(function () {
+      window.setTimeout(function () {
+        if (host.parentNode) host.remove();
+        modalOpen = false;
+      }, 300);
+    });
+  }
+
   function showNotice(opts) {
     opts = opts || {};
+    modalOpen = true;
+    blurComposer();
     var existing = document.getElementById(MODAL_ID);
     if (existing) existing.remove();
     var host = document.createElement("div");
     host.id = MODAL_ID;
     host.setAttribute("data-northgate", "modal");
+    host.style.cssText = "position:fixed;inset:0;z-index:2147483647;pointer-events:auto;";
     var shadow = host.attachShadow({ mode: "open" });
     shadow.innerHTML =
-      '<style>:host{all:initial}.scrim{position:fixed;inset:0;z-index:2147483647;background:rgba(20,36,28,.45);display:grid;place-items:center;font:14px/1.45 "Segoe UI",system-ui,sans-serif}.card{width:min(420px,calc(100vw - 32px));background:#f4efe4;color:#14241c;border-radius:10px;padding:20px 20px 16px;box-shadow:0 16px 40px rgba(0,0,0,.25)}h2{margin:0 0 8px;font-size:18px}p{margin:0 0 16px;color:#5c6a62}button{font:inherit;border:0;border-radius:6px;background:#1b3d2f;color:#f4efe4;padding:8px 12px;cursor:pointer}</style>' +
+      '<style>:host{all:initial}.scrim{position:fixed;inset:0;z-index:2147483647;pointer-events:auto;background:rgba(20,36,28,.45);display:grid;place-items:center;font:14px/1.45 "Segoe UI",system-ui,sans-serif}.card{width:min(420px,calc(100vw - 32px));background:#f4efe4;color:#14241c;border-radius:10px;padding:20px 20px 16px;box-shadow:0 16px 40px rgba(0,0,0,.25)}h2{margin:0 0 8px;font-size:18px}p{margin:0 0 16px;color:#5c6a62}button{font:inherit;border:0;border-radius:6px;background:#1b3d2f;color:#f4efe4;padding:8px 12px;cursor:pointer}</style>' +
       '<div class="scrim"><div class="card" role="dialog" aria-modal="true"><h2>' +
       escapeHtml(opts.title || "Northgate") +
       "</h2><p>" +
@@ -234,10 +269,19 @@
       '</p><button type="button" id="ng-ok">' +
       escapeHtml(opts.button || "OK") +
       "</button></div></div>";
-    shadow.getElementById("ng-ok").addEventListener("click", function () { host.remove(); });
+    shadow.getElementById("ng-ok").addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      dismissModal();
+    });
     var scrim = shadow.querySelector(".scrim");
     scrim.addEventListener("click", function (event) {
-      if (event.target === scrim) host.remove();
+      if (event.target === scrim) {
+        event.preventDefault();
+        event.stopPropagation();
+        dismissModal();
+      }
     });
     document.documentElement.appendChild(host);
   }
@@ -386,23 +430,56 @@
     paintFrame = requestAnimationFrame(liveScan);
   }
 
+  function isComposerEnter(event) {
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return false;
+    if (isInsideComposer(event.target)) return true;
+    var composer = getComposer();
+    var active = document.activeElement;
+    return Boolean(composer && active && (active === composer || composer.contains(active)));
+  }
+
   function onClick(event) {
+    if (isHardStop() && isSendButton(event.target)) {
+      stopSend(event);
+      blurComposer();
+      return;
+    }
     if (!isSendButton(event.target)) return;
     handleSend(event);
   }
 
   function onKeydown(event) {
-    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    if (!isComposerEnter(event)) return;
+    if (isHardStop()) {
+      stopSend(event);
+      blurComposer();
+      return;
+    }
+    handleSend(event);
+  }
+
+  function onBeforeInput(event) {
+    if (event.shiftKey) return;
+    if (event.inputType !== "insertParagraph") return;
     if (!isInsideComposer(event.target)) return;
+    if (isHardStop()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      blurComposer();
+      return;
+    }
     handleSend(event);
   }
 
   function onSubmit(event) {
     var composer = getComposer();
     if (!composer) return;
-    if (event.target instanceof HTMLFormElement && event.target.contains(composer)) {
-      handleSend(event);
+    if (!(event.target instanceof HTMLFormElement && event.target.contains(composer))) return;
+    if (isHardStop()) {
+      stopSend(event);
+      return;
     }
+    handleSend(event);
   }
 
   function logDecision(decision, result) {
@@ -416,8 +493,9 @@
   }
 
   function handleSend(event) {
-    if (Date.now() < holdUntil) {
+    if (isHardStop()) {
       stopSend(event);
+      blurComposer();
       return;
     }
 
@@ -450,6 +528,7 @@
     }
 
     writeComposer(composer, result.redacted);
+    blurComposer();
     var verified = scanText(readComposer(composer));
     if (!composerIsSafe(verified, result.redacted)) {
       paintBanner("Redaction failed — send blocked", cache.vaultName, "block");
@@ -466,6 +545,7 @@
     pendingResubmit = true;
     clearUnderlines();
     paintBanner("Redacted — press Send again", cache.vaultName, "warn");
+    blurComposer();
     showNotice({
       title: "Redacted — press Send again",
       message: "Structured PII was replaced in the composer. Review the tokens, then press Send or Enter once more. Northgate will not submit for you.",
@@ -479,9 +559,16 @@
     chrome.storage.onChanged.addListener(refreshCache);
     document.addEventListener("input", onEdit, true);
     document.addEventListener("paste", onEdit, true);
-    document.addEventListener("click", onClick, true);
-    document.addEventListener("keydown", onKeydown, true);
-    document.addEventListener("submit", onSubmit, true);
+    document.addEventListener("beforeinput", onBeforeInput, true);
+    window.addEventListener("click", onClick, true);
+    window.addEventListener("mousedown", function (event) {
+      if (isHardStop() && isSendButton(event.target)) {
+        stopSend(event);
+        blurComposer();
+      }
+    }, true);
+    window.addEventListener("keydown", onKeydown, true);
+    window.addEventListener("submit", onSubmit, true);
     window.setTimeout(liveScan, 400);
   }
 
