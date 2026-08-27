@@ -5,6 +5,11 @@
   --card: #ffffff;
   --line: #d2d2d7;
   --action: #0066cc;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
 }
 
 * {
@@ -14,12 +19,15 @@
 html,
 body {
   margin: 0;
-  padding: 0;
   background: var(--paper);
 }
 
-body {
+body.sheet {
   width: 360px;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
   color: var(--ink);
   font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -27,9 +35,15 @@ body {
 
 .mast {
   display: flex;
-  gap: 10px;
+  gap: var(--space-sm);
   align-items: center;
-  padding: 14px 16px 10px;
+  padding: 0;
+}
+
+.mast > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .mast h1 {
@@ -43,7 +57,7 @@ body {
 .hint,
 .note,
 .error {
-  margin: 6px 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 11px;
   line-height: 1.4;
@@ -54,11 +68,14 @@ body {
 }
 
 .mark {
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .panel {
-  padding: 10px 16px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 0;
 }
 
 .hidden {
@@ -67,16 +84,16 @@ body {
 
 label {
   display: block;
-  margin: 8px 0 4px;
+  margin: 0;
   font-weight: 600;
 }
 
 input[type="text"],
 select {
   width: 100%;
-  padding: 7px 10px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--space-sm);
   background: var(--card);
   color: var(--ink);
   font: inherit;
@@ -110,8 +127,8 @@ a:focus-visible {
 
 .primary {
   width: 100%;
-  margin-top: 10px;
-  padding: 7px 16px;
+  margin: 0;
+  padding: 8px 16px;
   border: 0;
   background: var(--action);
   color: #ffffff;
@@ -121,14 +138,18 @@ a:focus-visible {
   border: 0;
   background: transparent;
   color: var(--action);
-  padding: 4px 10px;
+  padding: 8px 16px;
 }
 
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-xs);
+}
+
+.row p {
+  margin: 0;
 }
 
 .row h2 {
@@ -141,19 +162,19 @@ a:focus-visible {
 .toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: var(--space-xs);
+  margin: 0;
   font-weight: 500;
 }
 
 .activity {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 0;
   padding: 0;
 }
 
 .activity li {
-  padding: 8px 0;
+  padding: var(--space-xs) 0;
   border-top: 1px solid var(--line);
 }
 
@@ -168,7 +189,7 @@ a:focus-visible {
 }
 
 .note {
-  padding: 10px 16px 16px;
+  padding: 0;
 }
 
 a {

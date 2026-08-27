@@ -28,12 +28,12 @@
       host.id = BANNER_ID;
       host.setAttribute("data-northgate", "banner");
       host.style.cssText =
-        "position:fixed;top:0;left:0;right:0;z-index:2147483646;height:36px;pointer-events:none;";
+        "position:fixed;top:0;left:0;right:0;z-index:2147483646;height:48px;pointer-events:none;";
       var shadow = host.attachShadow({ mode: "open" });
       shadow.innerHTML =
         '<style>' +
         ':host{all:initial}' +
-        '.bar{position:fixed;top:0;left:0;right:0;z-index:2147483646;display:flex;align-items:center;gap:10px;height:36px;box-sizing:border-box;padding:0 16px;background:#1d1d1f;color:#fff;font:12px/1.3 system-ui,-apple-system,BlinkMacSystemFont,sans-serif}' +
+        '.bar{position:fixed;top:0;left:0;right:0;z-index:2147483646;display:flex;align-items:center;gap:12px;height:48px;box-sizing:border-box;padding:0 24px;background:#1d1d1f;color:#fff;font:12px/1.3 system-ui,-apple-system,BlinkMacSystemFont,sans-serif}' +
         '.name{font-weight:600;letter-spacing:-.02em}' +
         '.status{font-weight:500}' +
         '.detail{color:#a1a1a6}' +
@@ -41,7 +41,7 @@
         '</style>' +
         '<div class="bar"><span class="name">Northgate</span><span class="status"></span><span class="detail"></span></div>';
       root.appendChild(host);
-      root.style.scrollPaddingTop = "36px";
+      root.style.scrollPaddingTop = "48px";
     }
 
     var bar = host.shadowRoot && host.shadowRoot.querySelector(".bar");
@@ -321,10 +321,10 @@
       '<style>' +
       ':host{all:initial}' +
       '.scrim{position:fixed;inset:0;z-index:2147483647;pointer-events:auto;background:rgba(29,29,31,.45);display:grid;place-items:center;font:14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,sans-serif}' +
-      '.card{width:min(380px,calc(100vw - 32px));background:#fff;color:#1d1d1f;border-radius:16px;padding:20px 20px 16px}' +
-      'h2{margin:0 0 6px;font-size:17px;font-weight:600;letter-spacing:-.025em}' +
-      'p{margin:0 0 16px;color:#6e6e73;font-size:13px}' +
-      'button{font:inherit;border:0;border-radius:9999px;background:#0066cc;color:#fff;padding:7px 16px;cursor:pointer}' +
+      '.card{width:min(380px,calc(100vw - 48px));background:#fff;color:#1d1d1f;border-radius:16px;padding:24px}' +
+      'h2{margin:0 0 8px;font-size:17px;font-weight:600;letter-spacing:-.025em}' +
+      'p{margin:0 0 24px;color:#6e6e73;font-size:13px}' +
+      'button{font:inherit;border:0;border-radius:9999px;background:#0066cc;color:#fff;padding:8px 16px;cursor:pointer}' +
       'button:active{transform:scale(.95)}' +
       'button:focus-visible{outline:2px solid #0066cc;outline-offset:2px}' +
       '</style>' +
