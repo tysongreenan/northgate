@@ -15,12 +15,12 @@ html,
 body {
   margin: 0;
   padding: 0;
+  background: var(--paper);
 }
 
 body {
   width: 360px;
   color: var(--ink);
-  background: var(--paper);
   font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
