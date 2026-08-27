@@ -742,6 +742,20 @@
     });
   }
 
+  function fileNeedsHold(file) {
+    if (!file) return false;
+    if (isPdfFile(file) || isTextishFile(file)) return true;
+    return scanText(file.name || "").found;
+  }
+
+  function filesNeedHold(files) {
+    var list = Array.prototype.slice.call(files || []);
+    for (var i = 0; i < list.length; i += 1) {
+      if (fileNeedsHold(list[i])) return true;
+    }
+    return false;
+  }
+
   function extractFileText(file) {
     if (!file || typeof file.size !== "number") return Promise.resolve("");
     if (file.size > FILE_SCAN_CAP) return Promise.resolve("");
@@ -823,6 +837,7 @@
     var input = event.target;
     var files = input.files;
     if (!files || !files.length) return;
+    if (!filesNeedHold(files)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     holdAndScanFiles(files, function () {
@@ -866,6 +881,7 @@
     var transfer = event.dataTransfer;
     if (!transfer || !transfer.files || !transfer.files.length) return;
     var files = snapshotFiles(transfer.files);
+    if (!filesNeedHold(files)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     var input = fileInputFrom(event.target);
@@ -892,6 +908,7 @@
     var clip = event.clipboardData;
     if (!clip || !clip.files || !clip.files.length) return;
     var files = snapshotFiles(clip.files);
+    if (!filesNeedHold(files)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     var input = fileInputFrom(event.target) || fileInputFrom(getComposer());

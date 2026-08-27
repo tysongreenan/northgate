@@ -1,5 +1,5 @@
 import { scanText } from "../lib/scan.js";
-import { extractPdfText, minimalUncompressedPdf, scanFiles } from "../lib/files.js";
+import { extractPdfText, fileNeedsHold, minimalUncompressedPdf, scanFiles } from "../lib/files.js";
 import assert from "node:assert/strict";
 
 function FakeFile(name, text, type) {
@@ -131,5 +131,9 @@ const imageSkipped = await scanFiles([
   },
 ]);
 assert.equal(imageSkipped.found, false);
+assert.equal(fileNeedsHold({ name: "screenshot.png", type: "image/png" }), false);
+assert.equal(fileNeedsHold({ name: "note.txt", type: "text/plain" }), true);
+assert.equal(fileNeedsHold({ name: "card.pdf", type: "application/pdf" }), true);
+assert.equal(fileNeedsHold({ name: "ohip-1234-567-890.png", type: "image/png" }), true);
 
 console.log("scan ok");
