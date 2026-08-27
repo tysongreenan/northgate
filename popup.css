@@ -1,12 +1,16 @@
 :root {
-  --ink: #14241c;
-  --muted: #5c6a62;
-  --paper: #f4efe4;
-  --card: #fffdf8;
-  --line: #d8d0c2;
-  --forest: #1b3d2f;
-  --maple: #c7462e;
-  --focus: #2f6f4f;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --paper: #f5f5f7;
+  --card: #ffffff;
+  --line: #d2d2d7;
+  --action: #0066cc;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --sheet-width: 360px;
 }
 
 * {
@@ -16,51 +20,71 @@
 html,
 body {
   margin: 0;
-  padding: 0;
+  width: var(--sheet-width);
+  min-width: var(--sheet-width);
+  max-width: var(--sheet-width);
+  background: var(--paper);
 }
 
-body {
-  width: 360px;
+body.sheet {
+  padding: var(--space-lg) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
   color: var(--ink);
-  background: var(--paper);
-  font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+  font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet > * {
+  width: 100%;
 }
 
 .mast {
   display: flex;
-  gap: 10px;
+  gap: var(--space-sm);
   align-items: center;
-  padding: 14px 14px 10px;
-  background: var(--forest);
-  color: #f4efe4;
+  padding: 0;
+}
+
+.mast > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .mast h1 {
   margin: 0;
-  font-size: 16px;
-  letter-spacing: 0.02em;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 .tag,
 .hint,
 .note,
 .error {
-  margin: 6px 0 0;
+  margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .mast .tag {
-  color: #d5e0d8;
+  color: var(--muted);
 }
 
 .mark {
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .panel {
-  padding: 12px 14px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 0;
 }
 
 .hidden {
@@ -69,87 +93,126 @@ body {
 
 label {
   display: block;
-  margin: 8px 0 4px;
+  margin: 0;
   font-weight: 600;
 }
 
 input[type="text"],
 select {
   width: 100%;
-  padding: 8px 9px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--space-sm);
   background: var(--card);
   color: var(--ink);
   font: inherit;
 }
 
+input[type="text"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--action);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--action);
+}
+
 button {
   font: inherit;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 9999px;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }
 
 .primary {
   width: 100%;
-  margin-top: 10px;
-  padding: 8px 10px;
+  margin: 0;
+  padding: 8px 16px;
   border: 0;
-  background: var(--forest);
-  color: #f4efe4;
+  background: var(--action);
+  color: #ffffff;
+}
+
+input[type="text"] + .primary,
+select + .primary {
+  margin-top: calc(var(--space-lg) - var(--space-xs));
 }
 
 .ghost {
-  border: 1px solid var(--line);
+  border: 0;
   background: transparent;
-  color: var(--ink);
-  padding: 4px 8px;
+  color: var(--action);
+  padding: 8px 0;
 }
 
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.row p {
+  margin: 0;
 }
 
 .row h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: var(--space-xs);
+  margin: 0;
   font-weight: 500;
 }
 
 .activity {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 0;
   padding: 0;
+  width: 100%;
 }
 
 .activity li {
-  padding: 8px 0;
+  padding: var(--space-xs) 0;
   border-top: 1px solid var(--line);
 }
 
 .activity .meta {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .error {
-  color: var(--maple);
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .note {
-  padding: 10px 14px 14px;
+  padding: 0;
 }
 
 a {
-  color: var(--focus);
+  color: var(--action);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }
