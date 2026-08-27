@@ -1,12 +1,10 @@
 :root {
-  --ink: #14241c;
-  --muted: #5c6a62;
-  --paper: #f4efe4;
-  --card: #fffdf8;
-  --line: #d8d0c2;
-  --forest: #1b3d2f;
-  --maple: #c7462e;
-  --focus: #2f6f4f;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --paper: #f5f5f7;
+  --card: #ffffff;
+  --line: #d2d2d7;
+  --action: #0066cc;
 }
 
 * {
@@ -23,22 +21,22 @@ body {
   width: 360px;
   color: var(--ink);
   background: var(--paper);
-  font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+  font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .mast {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 14px 14px 10px;
-  background: var(--forest);
-  color: #f4efe4;
+  padding: 14px 16px 10px;
 }
 
 .mast h1 {
   margin: 0;
-  font-size: 16px;
-  letter-spacing: 0.02em;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 .tag,
@@ -52,7 +50,7 @@ body {
 }
 
 .mast .tag {
-  color: #d5e0d8;
+  color: var(--muted);
 }
 
 .mark {
@@ -60,7 +58,7 @@ body {
 }
 
 .panel {
-  padding: 12px 14px 4px;
+  padding: 10px 16px 4px;
 }
 
 .hidden {
@@ -76,34 +74,54 @@ label {
 input[type="text"],
 select {
   width: 100%;
-  padding: 8px 9px;
+  padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--card);
   color: var(--ink);
   font: inherit;
 }
 
+input[type="text"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--action);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--action);
+}
+
 button {
   font: inherit;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 9999px;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }
 
 .primary {
   width: 100%;
   margin-top: 10px;
-  padding: 8px 10px;
+  padding: 7px 16px;
   border: 0;
-  background: var(--forest);
-  color: #f4efe4;
+  background: var(--action);
+  color: #ffffff;
 }
 
 .ghost {
-  border: 1px solid var(--line);
+  border: 0;
   background: transparent;
-  color: var(--ink);
-  padding: 4px 8px;
+  color: var(--action);
+  padding: 4px 10px;
 }
 
 .row {
@@ -116,6 +134,8 @@ button {
 .row h2 {
   margin: 0;
   font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .toggle {
@@ -143,13 +163,19 @@ button {
 }
 
 .error {
-  color: var(--maple);
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .note {
-  padding: 10px 14px 14px;
+  padding: 10px 16px 16px;
 }
 
 a {
-  color: var(--focus);
+  color: var(--action);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
 }
