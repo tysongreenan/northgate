@@ -9,6 +9,12 @@
  *   button[data-testid="send-button"]
  *   button[aria-label="Send prompt"]
  *   textarea / [contenteditable="true"] inside the composer form
+ *   input[type=file] change, file drop/paste, attach|upload|file labels
+ *
+ * File attach (live code is content.js): hold the native FileList, scan
+ * extracted text (PDF / text-ish), block-on-detect. Do not rewrite the PDF
+ * or auto-send a redacted file. Isolated-world scripts cannot patch ChatGPT's
+ * upload fetch without webRequest or WAR, both out of product lock.
  *
  * Nightfall-safer V1:
  *   1. Intercept Send / Enter before submit.

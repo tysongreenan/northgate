@@ -30,6 +30,20 @@ The page inject is **one classic `content.js`** (no `import`/`export`, no `type:
 8. Open the popup or **Open log**. Download **JSON** or **CSV**.
 9. Optional: turn on **Pretend Canada-only (demo)** and send PII again. A modal blocks the send: **Stayed in Canada (blocked)**.
 
+### V1.1 tester — Canadian IDs + file attach
+
+Use **fake** numbers only. Never paste a real health card or SIN.
+
+1. Type these in the ChatGPT composer (one at a time or together):
+   - OHIP grouped: `1234-567-890` or `1234 567 890` (compact `1234567890` only if you label it `OHIP …`)
+   - RAMQ: `ABCD 1234 5678` or `ABCD12345678`
+   - Spaced SIN: `123 456 789` (dashed `123-456-789` already works)
+2. First **Send** / **Enter** is blocked. Composer should show `[OHIP]`, `[RAMQ]`, and/or `[SIN]`. **OK** only closes the modal. Press Send again to submit the tokens. No dirty text should reach the thread.
+3. Attach a dummy `.txt` or uncompressed `.pdf` whose body contains those same fake strings. First attach/upload is **blocked** (modal hard stop). Northgate does not rewrite the file or auto-send a redacted copy. The dirty file must not appear in the thread.
+4. `416-555-0100` still redacts as `[PHONE]`. Bare `555-0100` is a known miss — do not treat that as a regression.
+
+`node scripts/test-scan.mjs` covers the fake OHIP / RAMQ / spaced SIN cases and a dummy `.txt` / `.pdf` extract.
+
 Honest labels: if text is sent to ChatGPT it still goes to OpenAI. “Stayed in Canada” only means the demo toggle blocked the send. There is no Canadian model route in this prototype.
 
 ## Hosts
@@ -46,6 +60,12 @@ Hosts live in `lib/hosts.js`. V1 **enables only** ChatGPT:
 Adding Claude later is: flip `enabled` in `lib/hosts.js` and the host list inside classic `content.js`, add one match to `manifest.json`, then add the Claude bind to `content.js` (or a future classic flatten). Do not introduce WAR or module content scripts.
 
 The ChatGPT bind in `content.js` uses `#prompt-textarea`, `textarea` / `contenteditable`, Send (`button[data-testid="send-button"]` / `aria-label="Send prompt"`), and Enter. First Send redacts and asks for a resubmit; it never auto-clicks Send.
+
+File attach uses the same public-hook style: capture `change` on `input[type=file]`, plus file `drop` / `paste`. Attach-button `aria-label` / `data-testid` values that mention attach, upload, or file are only used to find a nearby file input. Hashed class names are not the bind.
+
+V1.1 scans extracted text from `.txt` / other text-ish types and PDFs (literal strings + FlateDecode when `DecompressionStream` can inflate). If PII is found, the upload is blocked the same way send is blocked. Files are not rewritten in place — ChatGPT’s attach UI is a moving target, and a synthetic redacted `File` is not a trustworthy submit path. Screenshots are not OCR’d and are not held unless the filename itself matches.
+
+Not bound (product lock): ChatGPT’s own upload `fetch` from this isolated content script (`webRequest` / page-world inject / `web_accessible_resources` are out of scope), Google Drive / connector imports that never create a `FileList`, and image-only attaches.
 
 ChatGPT’s composer is reliable for this V1. Other sites are not wired.
 

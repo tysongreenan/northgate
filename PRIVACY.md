@@ -11,7 +11,9 @@ Version 1 runs only on chatgpt.com and chat.openai.com. It does not run on other
 
 ## What it reads
 
-On those two hosts, Northgate reads the ChatGPT composer so it can find structured personal information: email addresses, phone numbers, Canadian Social Insurance Numbers, and payment card numbers. Matches are replaced in the composer with tokens such as [EMAIL] or [PHONE]. The first Send is blocked. You review the tokens and press Send again if you want the redacted text to go to ChatGPT.
+On those two hosts, Northgate reads the ChatGPT composer so it can find structured personal information: email addresses, phone numbers, Canadian Social Insurance Numbers (dashed or spaced), Ontario health numbers (OHIP), Quebec health insurance numbers (RAMQ), and payment card numbers. Matches are replaced in the composer with tokens such as [EMAIL], [PHONE], [SIN], [OHIP], or [RAMQ]. The first Send is blocked. You review the tokens and press Send again if you want the redacted text to go to ChatGPT.
+
+If you attach a PDF or text file, Northgate reads that file locally before ChatGPT’s upload handler runs. If structured PII is found, the attach is blocked. The file is not rewritten and is not sent to a Northgate server. Screenshots are not OCR’d.
 
 If you press Send the second time, the redacted prompt goes to OpenAI as part of normal ChatGPT use. Northgate does not receive a copy of that prompt.
 
@@ -21,7 +23,7 @@ Northgate uses Chrome local storage on your device for:
 
 - a local sign-in name
 - the client vault you selected
-- an activity log of redaction events (time, host, decision, and counts of email / phone / SIN / card matches)
+- an activity log of redaction events (time, host, decision, and counts of email / phone / SIN / card / OHIP / RAMQ matches)
 
 This log stays on the device in V1. Northgate does not sync it to our servers. You can download or clear it from the extension.
 
