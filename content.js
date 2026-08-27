@@ -2,6 +2,15 @@
  * SINGLE classic content script. No import/export, no type:module,
  * no web_accessible_resources, no chrome.runtime.getURL module load.
  * Banner paints first. ChatGPT adapter lives in this file.
+ *
+ * File attach bind (same public-hook style as composer/Send):
+ *   capture change on input[type=file]
+ *   capture drop / paste when a FileList is present
+ *   attach-button aria-label / data-testid matching attach|upload|file
+ *     is only used to find a nearby file input — not hashed class names
+ * Could not bind: ChatGPT's own /backend-api/files fetch (isolated world,
+ * no webRequest, no page-world inject / WAR). Connector / Drive / screenshot
+ * attaches that never create a FileList. No OCR.
  */
 (function northgateClassic() {
   var BANNER_ID = "northgate-banner-host";
@@ -72,9 +81,30 @@
 
   var EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
   var PHONE = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/g;
-  var SIN = /\b\d{3}-\d{3}-\d{3}\b/g;
+  var SIN = /\b\d{3}[- ]\d{3}[- ]\d{3}\b/g;
   var CARD_SHAPED = /\b(?:\d[ -]?){13,19}\b/g;
-  var TOKEN = { email: "[EMAIL]", phone: "[PHONE]", sin: "[SIN]", card: "[CARD]" };
+  var OHIP_GROUPED = /\b[1-9]\d{3}[- ]\d{3}[- ]\d{3}(?:[- ][A-Za-z]{2})?\b/g;
+  var OHIP_COMPACT = /\b[1-9]\d{9}(?:[A-Za-z]{2})?\b/g;
+  var RAMQ_COMPACT = /\b[A-Za-z]{4}\d{8}\b/g;
+  var RAMQ_GROUPED = /\b[A-Za-z]{4}[ -]\d{4}[ -]\d{4}\b/g;
+  var OHIP_LABEL = /ohip|health\s*card|health\s*number|\bhcn\b|ontario\s*health/i;
+  var RAMQ_WORD = /^(card|form|file|code|from|with|this|that|name|user|data|note|page|item|type|date|text|only|also|into|over|your|have|been|will|they|them|json|html|http|post|send|open|save|edit|view|list|next|back|home|mail|call)$/i;
+  var TOKEN = { email: "[EMAIL]", phone: "[PHONE]", sin: "[SIN]", card: "[CARD]", ohip: "[OHIP]", ramq: "[RAMQ]" };
+
+  function emptyCounts() {
+    return { email: 0, phone: 0, sin: 0, card: 0, ohip: 0, ramq: 0 };
+  }
+
+  function mergeCounts(into, extra) {
+    var out = into || emptyCounts();
+    var add = extra || emptyCounts();
+    var keys = Object.keys(out);
+    for (var k = 0; k < keys.length; k += 1) {
+      var key = keys[k];
+      out[key] = (Number(out[key]) || 0) + (Number(add[key]) || 0);
+    }
+    return out;
+  }
 
   function cloneRe(re) {
     return new RegExp(re.source, re.flags.indexOf("g") !== -1 ? re.flags : re.flags + "g");
@@ -100,10 +130,24 @@
     var copy = cloneRe(re);
     var hit;
     while ((hit = copy.exec(source))) {
-      if (accept && !accept(hit[0])) continue;
+      if (accept && !accept(hit[0], source, hit.index)) continue;
       hits.push({ type: type, start: hit.index, end: hit.index + hit[0].length, value: hit[0] });
     }
     return hits;
+  }
+
+  function acceptOhip(value, source, index) {
+    var digits = value.replace(/\D/g, "");
+    if (digits.length !== 10 || digits.charAt(0) === "0") return false;
+    if (/[-\s]/.test(value)) return true;
+    var from = Math.max(0, index - 28);
+    var window = source.slice(from, index + value.length + 28);
+    return OHIP_LABEL.test(window);
+  }
+
+  function acceptRamq(value) {
+    if (/^[A-Za-z]{4}\d{8}$/.test(value)) return true;
+    return !RAMQ_WORD.test(value.slice(0, 4));
   }
 
   function findMatches(text) {
@@ -114,6 +158,10 @@
         var digits = value.replace(/\D/g, "");
         return digits.length >= 13 && digits.length <= 19 && luhnOk(digits);
       }))
+      .concat(collect("ohip", source, OHIP_GROUPED, acceptOhip))
+      .concat(collect("ohip", source, OHIP_COMPACT, acceptOhip))
+      .concat(collect("ramq", source, RAMQ_GROUPED, acceptRamq))
+      .concat(collect("ramq", source, RAMQ_COMPACT, acceptRamq))
       .concat(collect("sin", source, SIN))
       .concat(collect("phone", source, PHONE));
 
@@ -139,7 +187,7 @@
   function scanText(text) {
     var source = String(text || "");
     var matches = findMatches(source);
-    var counts = { email: 0, phone: 0, sin: 0, card: 0 };
+    var counts = emptyCounts();
     var redacted = source;
     var ordered = matches.slice().sort(function (a, b) { return b.start - a.start; });
     for (var i = 0; i < ordered.length; i += 1) {
@@ -193,6 +241,8 @@
           phone: Number(entry.redactions && entry.redactions.phone) || 0,
           sin: Number(entry.redactions && entry.redactions.sin) || 0,
           card: Number(entry.redactions && entry.redactions.card) || 0,
+          ohip: Number(entry.redactions && entry.redactions.ohip) || 0,
+          ramq: Number(entry.redactions && entry.redactions.ramq) || 0,
         },
         note: entry.note || "",
       };
@@ -220,7 +270,7 @@
   var modalOpen = false;
 
   function isHardStop() {
-    return modalOpen || Date.now() < holdUntil;
+    return modalOpen || Date.now() < holdUntil || fileScanBusy;
   }
 
   function blurComposer() {
@@ -317,7 +367,12 @@
   var pendingResubmit = false;
   var lastRedacted = "";
   var holdUntil = 0;
+  var fileScanBusy = false;
+  var allowNativeFiles = false;
   var cache = { pretendCanadaOnly: false, vaultName: "", vaultId: "" };
+  var FILE_SCAN_CAP = 5 * 1024 * 1024;
+  var TEXT_EXT = /\.(txt|text|md|markdown|csv|tsv|json|html|htm|xml|log|rtf)$/i;
+  var PDF_EXT = /\.pdf$/i;
 
   function refreshCache() {
     getState().then(function (state) {
@@ -501,7 +556,24 @@
 
     var composer = getComposer();
     var raw = readComposer(composer);
-    if (!composer || !raw.trim()) return;
+    if (!composer) return;
+
+    var labelResult = scanText(readAttachmentLabels());
+    if (labelResult.found) {
+      stopSend(event);
+      holdUntil = Date.now() + 500;
+      paintBanner("Attachment blocked — PII in filename", cache.vaultName, "block");
+      showNotice({
+        title: "Attachment blocked",
+        message:
+          "Structured PII was found in an attachment name. Northgate blocked the send. Remove or rename the file, then press Send again.",
+      });
+      logDecision("Attachment blocked", labelResult);
+      resetPending();
+      return;
+    }
+
+    if (!raw.trim()) return;
 
     var result = scanText(raw);
     if (composerIsSafe(result, lastRedacted)) {
@@ -553,14 +625,315 @@
     logDecision("Redacted — waiting for resubmit", result);
   }
 
+  function isFileInput(node) {
+    return node instanceof HTMLInputElement && String(node.type || "").toLowerCase() === "file";
+  }
+
+  function fileInputFrom(node) {
+    if (isFileInput(node)) return node;
+    if (!node) return null;
+    if (node.control && isFileInput(node.control)) return node.control;
+    var host = node.closest ? node.closest("form, [data-testid], label") : null;
+    if (host) {
+      var nested = host.querySelector('input[type="file"]');
+      if (nested) return nested;
+    }
+    return document.querySelector('input[type="file"]');
+  }
+
+  function isAttachControl(node) {
+    var el = node && node.closest ? node.closest("button, [role='button'], label") : null;
+    if (!el) return false;
+    var hay = [
+      el.getAttribute("data-testid") || "",
+      el.getAttribute("aria-label") || "",
+      el.getAttribute("title") || "",
+      el.textContent || "",
+    ].join(" ").toLowerCase();
+    return /attach|upload|file|paperclip|attachment/.test(hay);
+  }
+
+  function isTextishFile(file) {
+    var name = String((file && file.name) || "");
+    var type = String((file && file.type) || "").toLowerCase();
+    if (type.indexOf("text/") === 0) return true;
+    if (type === "application/json" || type === "application/xml") return true;
+    return TEXT_EXT.test(name);
+  }
+
+  function isPdfFile(file) {
+    var name = String((file && file.name) || "");
+    var type = String((file && file.type) || "").toLowerCase();
+    return type === "application/pdf" || PDF_EXT.test(name);
+  }
+
+  function bytesToBinaryString(bytes) {
+    var chunk = 0x8000;
+    var out = "";
+    for (var i = 0; i < bytes.length; i += chunk) {
+      out += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return out;
+  }
+
+  function pdfLiteralStrings(source) {
+    var parts = [];
+    var re = /\((?:\\.|[^\\)])*\)/g;
+    var hit;
+    while ((hit = re.exec(source))) {
+      parts.push(
+        hit[0]
+          .slice(1, -1)
+          .replace(/\\n/g, "\n")
+          .replace(/\\r/g, "\r")
+          .replace(/\\t/g, "\t")
+          .replace(/\\([\\()])/g, "$1")
+      );
+    }
+    return parts.join(" ");
+  }
+
+  function inflatePdfBytes(bytes) {
+    var methods = ["deflate", "deflate-raw"];
+    function tryMethod(index) {
+      if (index >= methods.length) return Promise.resolve(null);
+      try {
+        var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream(methods[index]));
+        return new Response(stream)
+          .arrayBuffer()
+          .then(function (buf) {
+            var out = new Uint8Array(buf);
+            return out.length ? out : tryMethod(index + 1);
+          })
+          .catch(function () {
+            return tryMethod(index + 1);
+          });
+      } catch (err) {
+        return tryMethod(index + 1);
+      }
+    }
+    return tryMethod(0);
+  }
+
+  function extractPdfText(buffer) {
+    var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    var raw = bytesToBinaryString(bytes);
+    var chunks = [pdfLiteralStrings(raw)];
+    var streamRe = /stream\r?\n([\s\S]*?)endstream/g;
+    var hit;
+    var inflates = [];
+    while ((hit = streamRe.exec(raw))) {
+      var payload = hit[1];
+      var rawBytes = new Uint8Array(payload.length);
+      for (var i = 0; i < payload.length; i += 1) {
+        rawBytes[i] = payload.charCodeAt(i) & 255;
+      }
+      inflates.push(
+        inflatePdfBytes(rawBytes).then(function (inflated) {
+          if (!inflated) return;
+          var inflatedText = bytesToBinaryString(inflated);
+          chunks.push(pdfLiteralStrings(inflatedText));
+          chunks.push(inflatedText.replace(/[^\x09\x0a\x0d\x20-\x7e]/g, " "));
+        })
+      );
+    }
+    return Promise.all(inflates).then(function () {
+      return chunks.join(" ").replace(/\s+/g, " ").trim();
+    });
+  }
+
+  function extractFileText(file) {
+    if (!file || typeof file.size !== "number") return Promise.resolve("");
+    if (file.size > FILE_SCAN_CAP) return Promise.resolve("");
+    if (isPdfFile(file)) {
+      return file.arrayBuffer().then(extractPdfText);
+    }
+    if (isTextishFile(file)) {
+      return file.text();
+    }
+    return Promise.resolve("");
+  }
+
+  function scanFiles(files) {
+    var list = Array.prototype.slice.call(files || []);
+    var counts = emptyCounts();
+    var found = false;
+    var chain = Promise.resolve();
+    list.forEach(function (file) {
+      chain = chain.then(function () {
+        var nameResult = scanText(file.name || "");
+        mergeCounts(counts, nameResult.counts);
+        if (nameResult.found) found = true;
+        return extractFileText(file).then(function (text) {
+          var bodyResult = scanText(text);
+          mergeCounts(counts, bodyResult.counts);
+          if (bodyResult.found) found = true;
+        });
+      });
+    });
+    return chain.then(function () {
+      return { found: found, counts: counts, fileCount: list.length };
+    });
+  }
+
+  function blockFileUpload(result) {
+    holdUntil = Date.now() + 500;
+    paintBanner("Attachment blocked — PII in file", cache.vaultName, "block");
+    showNotice({
+      title: "Attachment blocked",
+      message:
+        "Structured PII was found in a file you tried to attach. Northgate blocked the upload. The file was not sent to the model. Remove the identifiers and attach again, or paste redacted text in the composer.",
+    });
+    logDecision("Attachment blocked", result);
+  }
+
+  function holdAndScanFiles(files, onClean) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) return Promise.resolve(false);
+    fileScanBusy = true;
+    paintBanner("Scanning attachment…", cache.vaultName, "warn");
+    return scanFiles(list)
+      .then(function (result) {
+        fileScanBusy = false;
+        if (result.found) {
+          blockFileUpload(result);
+          return true;
+        }
+        if (typeof onClean === "function") onClean();
+        paintBanner("No PII detected", cache.vaultName);
+        return false;
+      })
+      .catch(function (err) {
+        fileScanBusy = false;
+        console.warn("[northgate] file scan failed", err);
+        paintBanner("Attachment blocked — could not scan file", cache.vaultName, "block");
+        showNotice({
+          title: "Attachment blocked",
+          message:
+            "Northgate could not read that attachment. The file was not sent. Try a .txt or .pdf, or paste the text in the composer.",
+        });
+        logDecision("Attachment blocked", { counts: emptyCounts() });
+        return true;
+      });
+  }
+
+  function onFileChange(event) {
+    if (allowNativeFiles) return;
+    if (!isFileInput(event.target)) return;
+    var input = event.target;
+    var files = input.files;
+    if (!files || !files.length) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    holdAndScanFiles(files, function () {
+      allowNativeFiles = true;
+      try {
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      } finally {
+        allowNativeFiles = false;
+      }
+    }).then(function (blocked) {
+      if (blocked) {
+        try {
+          input.value = "";
+        } catch (err) {}
+      }
+    });
+  }
+
+  function snapshotFiles(list) {
+    return Array.prototype.slice.call(list || []);
+  }
+
+  function assignFilesToInput(input, files) {
+    if (!input || !files || !files.length || typeof DataTransfer !== "function") return false;
+    try {
+      var transfer = new DataTransfer();
+      for (var i = 0; i < files.length; i += 1) transfer.items.add(files[i]);
+      input.files = transfer.files;
+      allowNativeFiles = true;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      allowNativeFiles = false;
+      return true;
+    } catch (err) {
+      allowNativeFiles = false;
+      return false;
+    }
+  }
+
+  function onFileDrop(event) {
+    if (allowNativeFiles) return;
+    var transfer = event.dataTransfer;
+    if (!transfer || !transfer.files || !transfer.files.length) return;
+    var files = snapshotFiles(transfer.files);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    var input = fileInputFrom(event.target);
+    holdAndScanFiles(files, function () {
+      if (input && assignFilesToInput(input, files)) return;
+      if (typeof DataTransfer !== "function") return;
+      try {
+        var next = new DataTransfer();
+        for (var i = 0; i < files.length; i += 1) next.items.add(files[i]);
+        allowNativeFiles = true;
+        event.target.dispatchEvent(
+          new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: next })
+        );
+      } catch (err) {
+        console.warn("[northgate] clean drop replay failed; user can attach again", err);
+      } finally {
+        allowNativeFiles = false;
+      }
+    });
+  }
+
+  function onFilePaste(event) {
+    if (allowNativeFiles) return;
+    var clip = event.clipboardData;
+    if (!clip || !clip.files || !clip.files.length) return;
+    var files = snapshotFiles(clip.files);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    var input = fileInputFrom(event.target) || fileInputFrom(getComposer());
+    holdAndScanFiles(files, function () {
+      if (input && assignFilesToInput(input, files)) return;
+    });
+  }
+
+  function onAttachClick(event) {
+    if (!isAttachControl(event.target)) return;
+    fileInputFrom(event.target);
+  }
+
+  function readAttachmentLabels() {
+    var form = document.querySelector("form");
+    var root = form || document.body;
+    if (!root) return "";
+    var bits = [];
+    var nodes = root.querySelectorAll("[aria-label], [data-testid], [title]");
+    for (var i = 0; i < nodes.length; i += 1) {
+      var testid = (nodes[i].getAttribute("data-testid") || "").toLowerCase();
+      var label = nodes[i].getAttribute("aria-label") || nodes[i].getAttribute("title") || "";
+      if (/file|attach|upload|preview/.test(testid) || /\.(txt|pdf|md|csv|json|html)\b/i.test(label)) {
+        bits.push(label);
+        bits.push(nodes[i].textContent || "");
+      }
+    }
+    return bits.join(" ");
+  }
+
   function initChatgpt(host) {
     paintBanner("Watching composer", host.label + " · redaction is local; send still goes to the site");
     refreshCache();
     chrome.storage.onChanged.addListener(refreshCache);
     document.addEventListener("input", onEdit, true);
     document.addEventListener("paste", onEdit, true);
+    document.addEventListener("paste", onFilePaste, true);
+    document.addEventListener("change", onFileChange, true);
+    document.addEventListener("drop", onFileDrop, true);
     document.addEventListener("beforeinput", onBeforeInput, true);
     window.addEventListener("click", onClick, true);
+    window.addEventListener("click", onAttachClick, true);
     window.addEventListener("mousedown", function (event) {
       if (isHardStop() && isSendButton(event.target)) {
         stopSend(event);

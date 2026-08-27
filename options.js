@@ -55,6 +55,8 @@ async function render() {
       <td>${counts.phone || 0}</td>
       <td>${counts.sin || 0}</td>
       <td>${counts.card || 0}</td>
+      <td>${counts.ohip || 0}</td>
+      <td>${counts.ramq || 0}</td>
     `;
     els.rows.append(tr);
   }

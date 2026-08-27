@@ -48,7 +48,7 @@ function renderActivity(activity) {
   for (const item of recent) {
     const li = document.createElement("li");
     const counts = item.redactions || {};
-    const countText = `email ${counts.email || 0} · phone ${counts.phone || 0} · sin ${counts.sin || 0} · card ${counts.card || 0}`;
+    const countText = `email ${counts.email || 0} · phone ${counts.phone || 0} · sin ${counts.sin || 0} · card ${counts.card || 0} · ohip ${counts.ohip || 0} · ramq ${counts.ramq || 0}`;
     li.innerHTML = `<div><strong>${item.decision}</strong> · ${item.host}</div>
       <div class="meta">${formatTime(item.timestamp)} · ${item.vaultName}<br>${countText}</div>`;
     els.activity.append(li);
