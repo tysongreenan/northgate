@@ -10,6 +10,7 @@
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
+  --sheet-width: 360px;
 }
 
 * {
@@ -19,18 +20,24 @@
 html,
 body {
   margin: 0;
+  width: var(--sheet-width);
+  min-width: var(--sheet-width);
+  max-width: var(--sheet-width);
   background: var(--paper);
 }
 
 body.sheet {
-  width: 360px;
-  padding: var(--space-lg);
+  padding: var(--space-lg) var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   color: var(--ink);
-  font: 13px/1.4 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font: 14px/1.4 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+.sheet > * {
+  width: 100%;
 }
 
 .mast {
@@ -41,6 +48,8 @@ body.sheet {
 }
 
 .mast > div {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -59,7 +68,7 @@ body.sheet {
 .error {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
@@ -143,7 +152,7 @@ select + .primary {
   border: 0;
   background: transparent;
   color: var(--action);
-  padding: 8px 16px;
+  padding: 8px 0;
 }
 
 .row {
@@ -151,6 +160,7 @@ select + .primary {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-xs);
+  width: 100%;
 }
 
 .row p {
@@ -159,7 +169,7 @@ select + .primary {
 
 .row h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.015em;
 }
@@ -176,6 +186,7 @@ select + .primary {
   list-style: none;
   margin: 0;
   padding: 0;
+  width: 100%;
 }
 
 .activity li {
@@ -185,7 +196,7 @@ select + .primary {
 
 .activity .meta {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .error {
