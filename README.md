@@ -63,7 +63,7 @@ The ChatGPT bind in `content.js` uses `#prompt-textarea`, `textarea` / `contente
 
 File attach uses the same public-hook style: capture `change` on `input[type=file]`, plus file `drop` / `paste`. Attach-button `aria-label` / `data-testid` values that mention attach, upload, or file are only used to find a nearby file input. Hashed class names are not the bind.
 
-V1.1 scans extracted text from `.txt` / other text-ish types and PDFs (literal strings + FlateDecode when `DecompressionStream` can inflate). If PII is found, the upload is blocked the same way send is blocked. Files are not rewritten in place — ChatGPT’s attach UI is a moving target, and a synthetic redacted `File` is not a trustworthy submit path. Screenshots are not OCR’d.
+V1.1 scans extracted text from `.txt` / other text-ish types and PDFs (literal strings + FlateDecode when `DecompressionStream` can inflate). If PII is found, the upload is blocked the same way send is blocked. Files are not rewritten in place — ChatGPT’s attach UI is a moving target, and a synthetic redacted `File` is not a trustworthy submit path. Screenshots are not OCR’d and are not held unless the filename itself matches.
 
 Not bound (product lock): ChatGPT’s own upload `fetch` from this isolated content script (`webRequest` / page-world inject / `web_accessible_resources` are out of scope), Google Drive / connector imports that never create a `FileList`, and image-only attaches.
 
