@@ -134,6 +134,11 @@ a:focus-visible {
   color: #ffffff;
 }
 
+input[type="text"] + .primary,
+select + .primary {
+  margin-top: calc(var(--space-lg) - var(--space-xs));
+}
+
 .ghost {
   border: 0;
   background: transparent;
